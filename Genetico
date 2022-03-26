@@ -1,0 +1,242 @@
+import java.util.*;
+
+public class Genetico {
+	List<Armadura> populacao = new ArrayList<Armadura>();
+	List<Integer> selecionados = new ArrayList<Integer>();
+ 	final String[] pecas = {"Capacete", "Peitoral", "Botas", "Luvas", "Escudo"};
+	private Random r = new Random();
+ 	final int POPULACAO = 50; // Populacao maxima
+ 	final int SELECAO = 20; // Quantidade que pode exceder, nos cruzamentos.
+	static final int EPOCAS = 100;
+	static final int MUTANTES = 4;
+	static final boolean MELHORES = true;
+	static final boolean PIORES = false;
+	static boolean DEBUG = true;
+
+	public void criaPopulacao() {
+		for (int i = 0; i < POPULACAO; i++) {
+			populacao.add(new Armadura());
+		}
+	}
+
+	public void ordenaPopulacao(boolean melhores) {	
+		boolean ordenado = false;
+	    
+	    recalculaPontuacao();
+	    while(!ordenado) {
+	        ordenado = true;
+	        for (int i = 0; i < populacao.size() - 1; i++) {
+	        	Armadura e1 = populacao.get(i);
+				Armadura e2 = populacao.get(i+1);
+				double j = e1.defTotal;
+				double k = e2.defTotal;
+				if(melhores) {
+	        		if (j > k) {
+		        		populacao.remove(i);
+						populacao.remove(i);
+						populacao.add(i, e2);
+						populacao.add(i+1, e1);
+						ordenado = false;
+		        	}
+	        	}else {
+	        		if (j < k) {
+		        		populacao.remove(i);
+						populacao.remove(i);
+						populacao.add(i, e2);
+						populacao.add(i+1, e1);
+						ordenado = false;
+		        	}
+	        	}
+	        }
+	    }	
+	    
+	}
+
+	//seleciona elementos com base na ordem estabelecida
+	void selecao(int quantidade) {
+		selecionados.clear();
+		
+		// Criando a roleta
+		Vector<Integer> roleta = new Vector<Integer>();
+		int peso = 1;
+		int cont = 0;
+		for (int i = 0; i < populacao.size(); i++) {
+			for (int j = 0; j < peso; j++) {
+				Integer aux = i;
+				roleta.add(aux);
+			}
+			if (cont > 4) {
+				peso++;
+				cont = 0;
+			} else {
+				cont++;
+			}
+		}
+		
+		// Seleciona os elementos na roleta;
+		for (int i = 0; i < SELECAO; i++) {
+			// pega um numero aleatorio na roleta
+			int escolhido = r.nextInt(roleta.size());
+			// pega o indice na roleta
+			Integer aux = (Integer) roleta.get(escolhido);
+			// pega o elemento com seu indice
+			Armadura e = (Armadura) populacao.get(aux.intValue());
+
+			if (!e.selecionado) {
+				// seta o elemento como selecionado
+				e.selecionado = true;
+				// insere seu indice no vetor de selecionados
+				selecionados.add(aux);
+			} else {
+				i--;
+			}
+		}
+		
+		dbgln("Selecionados: " + selecionados.size());
+	}
+
+	void cruzamento() {
+		while (selecionados.size() > 0) {
+			// Pega o primeiro elemento da lista de selecionados
+			Integer aux1 = (Integer) selecionados.get(0);
+			Armadura pai1 = (Armadura) populacao.get(aux1.intValue());
+			pai1.selecionado = false;
+			selecionados.remove(0);
+
+			// Pega o segundo elemento da lista de selecionados
+			Integer aux2 = (Integer) selecionados.get(0);
+			Armadura pai2 = (Armadura) populacao.get(aux2.intValue());
+			pai2.selecionado = false;
+			selecionados.remove(0);
+
+			// cruza, criando dois filhos com duas peças de armaduras trocadas
+			Armadura filho1 = new Armadura(pai1);
+			Armadura filho2 = new Armadura(pai2);
+			int idx1 = r.nextInt(5);
+			int idx2 = r.nextInt(5);
+			double temp = filho1.equipamento[idx1];
+			filho1.equipamento[idx1] = filho2.equipamento[idx1];
+			filho2.equipamento[idx1] = temp;
+			if (idx1 != idx2) {
+				temp = filho1.equipamento[idx2];
+				filho1.equipamento[idx2] = filho2.equipamento[idx2];
+				filho2.equipamento[idx2] = temp;
+			}
+			//inserindo-os na populacao
+			populacao.add(filho1);
+			populacao.add(filho2);
+			if (idx1 != idx2) {
+				dbg("Trocando " + pecas[idx1] + " e " + pecas[idx2]);
+			}else {
+				dbg("Trocando " + pecas[idx1]);
+			}
+			dbg(" das armaduras " + aux1.intValue());
+			dbgln(" e " + aux2.intValue() + "---------------");
+			filho1.calculaValores();
+			filho2.calculaValores();
+			
+			pai1.mostrarResumo();
+			pai2.mostrarResumo();
+			filho1.mostrarResumo();
+			filho2.mostrarResumo();
+		}
+		ordenaPopulacao(MELHORES);
+	}
+
+	void mutacao() {
+		// Pode mutar ate 4 elementos
+		int qtd = r.nextInt(MUTANTES + 1);
+		for (int i = qtd; i > 0; i--) {
+			// Escolhe um elemento aleatoriamente
+			int j = r.nextInt(populacao.size());
+			Armadura a = (Armadura) populacao.get(i);
+			// Escolhe aleatoriamente uma peça de armadura
+			int k = r.nextInt(5);
+			dbgln("Mutando " + pecas[k] + " da armadura " + j);
+			if (DEBUG) {
+				//e.mostrarInformacoes();
+			}
+			// Muda sua informacao aleatoriamente
+			a.equipamento[k] = r.nextInt(10) + 1;
+			a.calculaValores();
+			if (DEBUG) {
+				//e.mostrarInformacoes();
+			}
+		}
+		ordenaPopulacao(MELHORES);
+	}
+
+	void matar() {
+		boolean matando = true;
+		int i = 0;
+		while (matando) {
+			Armadura e = (Armadura) populacao.get(i);
+			if (e.selecionado) {
+				populacao.remove(i);
+				i--;
+			}
+			i++;
+			if (i >= populacao.size()) {
+				matando = false;
+			}
+		}
+		selecionados.clear();
+	}
+
+	void recalculaPontuacao() {
+		for (int i = 0; i < populacao.size(); i++) {
+			Armadura e = (Armadura) populacao.get(i);
+			e.calculaValores();
+		}
+	}
+
+	void mostrarResultado() {
+		ordenaPopulacao(PIORES);
+		System.out.println("\n\nResultado:");
+		for (int i=POPULACAO-1; i > 0; i--) {
+			Armadura a = (Armadura) populacao.get(i);
+			System.out.print("" + (i+1) + "o: ");
+			a.mostrarResumo();
+		}
+		
+		System.out.println("\n***Melhor Resultado***");
+		Armadura a = (Armadura) populacao.get(0);
+		a.mostrarInformacoes();
+	}
+
+	public static void dbg(String s) {
+		if (DEBUG) {
+			System.out.print(s);
+		}
+	}
+
+	public static void dbgln(String s) {
+		if (DEBUG)
+			System.out.println(s);
+	}
+
+	public static void main(String[] arguments) {
+		Genetico g = new Genetico();
+		dbgln("Criando Populacao");
+		g.criaPopulacao();
+		for (int i = 0; i < EPOCAS; i++) {
+			dbgln("\n**** EPOCA " + (i + 1) + " ****");
+			dbgln("Populacao: " + g.populacao.size());
+			dbgln("Selecionando os 20 melhores");
+			g.ordenaPopulacao(MELHORES);
+			g.selecao(20);
+			dbgln("\nCruzamento");
+			g.cruzamento();
+			dbgln("\nMatando");
+			dbgln("Populacao: " + g.populacao.size());
+			dbgln("Selecionando os 20 piores");			
+			g.ordenaPopulacao(PIORES);
+			g.selecao(20);
+			g.matar();
+			dbgln("Populacao = " + g.populacao.size());
+			dbgln("\nMutacao");
+			g.mutacao();
+		}
+		g.mostrarResultado();
+	}
+}
