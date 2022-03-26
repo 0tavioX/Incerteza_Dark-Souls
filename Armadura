@@ -1,0 +1,67 @@
+import java.util.Random;
+
+class Armadura {
+	double[] equipamento = new double[5]; //def de cada peça de armadura
+	double[] peso = new double[5]; //peso de cada peça de armadura
+	double defTotal = 0; 
+	double pesoTotal = 0;
+	boolean selecionado = false;
+	static Random r = new Random();
+
+	//construtor
+	Armadura() {
+		for (int i = 0; i < 5; i++) {
+			equipamento[i] = r.nextInt(12) + 1;
+			peso[i] = r.nextInt(5) + 1;
+		}
+		calculaValores();
+		selecionado = false;
+		mostrarResumo();
+	}
+
+	//construtor que cria uma Armadura filho para o cruzamento
+	Armadura(Armadura a) {
+		for (int i = 0; i < 5; i++) {
+			equipamento[i] = a.equipamento[i];
+			peso[i] = a.peso[i];
+		}
+		selecionado = false;
+	}
+
+	//mostra um valor geral da Def/Peso total da armadura
+	void mostrarResumo() {
+		System.out.println("Def: " + defTotal + " / Peso: " + pesoTotal + "Kg");
+	}
+	
+	//mostra informação detalhada do valor de cada peça de armadura
+	void mostrarInformacoes() {
+		System.out.println("CAPACETE: [DEF: " + equipamento[0]*1.5 + "/" + peso[0]*2 + "Kg]  ");
+		System.out.println("PEITORAL: [DEF: " + equipamento[1]*5 + "/" + peso[1]*7 + "Kg]  ");
+		System.out.println("BOTAS: [DEF: " + equipamento[2] + "/" + peso[2] + "Kg]  ");
+		System.out.println("LUVAS: [DEF: " + equipamento[3] + "/" + peso[3] + "Kg]  ");
+		System.out.println("ESCUDO: [DEF" + equipamento[4]*2 + "/" + peso[4] + "Kg] ");
+		System.out.println("TOTAL: [DEF" + defTotal + "/" + pesoTotal + "Kg]");
+	}
+	
+	//caucula os valores individuais de cada peça (Def/Peso) com base nos nos valores Random 
+	public void calculaValores() {
+		defTotal  = equipamento[0]*1.5; //Capacete
+		defTotal += equipamento[1]*5; 	//Peitoral
+		defTotal += equipamento[2]; 	//Botas
+		defTotal += equipamento[3]; 	//Luvas
+		defTotal += equipamento[4]*2; 	//Escudo
+		
+		pesoTotal  = peso[0]*2; //Capacete
+		pesoTotal += peso[1]*7; //Peitoral
+		pesoTotal += peso[2]*3; //Botas
+		pesoTotal += peso[3]*3; //Luvas
+		pesoTotal += peso[4]*4; //Escudo
+		
+		//caso o peso ultrapasse o valor de 55Kg, penalidade Def -100
+		if(pesoTotal>55) {
+			defTotal -= 100;
+		}
+	}
+
+	
+}
